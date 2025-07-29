@@ -218,7 +218,7 @@
 
 
             } else if (JSON.parse(response).resultCode == "Refused" || JSON.parse(response).resultCode == "Declined") {
-                $('#dropin-containerr').html(`<div class=" success-page adyen-checkout__status adyen-checkout__status--error"><img class="adyen-checkout__status__icon adyen-checkout__image adyen-checkout__image--loaded" src="https://checkoutshopper-test.adyen.com/checkoutshopper/images/components/error.gif" alt="An unknown error occurred" height="88"><span class="adyen-checkout__status__text">Payment Unsuccessful : <b>${response.refusalReason}</b></span></div>`);
+                $('#dropin-container').html(`<div class=" success-page adyen-checkout__status adyen-checkout__status--error"><img class="adyen-checkout__status__icon adyen-checkout__image adyen-checkout__image--loaded" src="https://checkoutshopper-test.adyen.com/checkoutshopper/images/components/error.gif" alt="An unknown error occurred" height="88"><span class="adyen-checkout__status__text">Payment Unsuccessful : <b>${response.refusalReason}</b></span></div>`);
             }
         }
         loadDropin();
