@@ -1,0 +1,112 @@
+<html>
+
+<head>
+    <!-- <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">-->
+     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+   <!-- <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script> -->
+    <!-- Embed the Adyen Web script element above any other JavaScript in your checkout page. -->
+    <script src="https://checkoutshopper-live.cdn.adyen.com/checkoutshopper/sdk/6.11.0/adyen.js"
+        integrity="sha384-wwiuyx0VwdDwaHvlLtdCKeUuFCNIMDrWrQI24PdEMMMGgOZPHirMZfXHNgrk6DG5"
+        crossorigin="anonymous"></script>
+
+    <link rel="stylesheet" href="https://checkoutshopper-live.cdn.adyen.com/checkoutshopper/sdk/6.11.0/adyen.css"
+        integrity="sha384-grpuyJ9vAlVrx/mBLXLO3V2f9W3m5KKYx34MzigvvPqArvi0WqWoD/Pl++yf15EU" crossorigin="anonymous">
+    <script>
+
+        async function loadDropin() {
+            var sessionResponse = {
+    "amount": {
+        "currency": "EUR",
+        "value": 1000
+    },
+    "countryCode": "AE",
+    "expiresAt": "2025-04-24T14:46:06+02:00",
+    "id": "CS7E1CF177C0D3C9A1",
+    "merchantAccount": "MaherAccountECOM",
+    "reference": "YOUR_PAYMENT_REFERENCE",
+    "returnUrl": "https://your-company.com/checkout?shopperOrder=12xy..",
+    "shopperLocale": "en-US",
+    "mode": "embedded",
+    "sessionData": "Ab02b4c0!BQABAgCLvH36Q8ZJ3iAfZfo3yW2FE+eUrk5h/g57vIxLrI7J3pcMEdT76/2lXIsX5/kkXEdwBZ6Y8s22tIy13mYmAoi84dilJUcAg0B75XtjpOIXK0INGocS66c6y0Qg300ZPksXj80BJnHpxR9I0irmhkw1jxg4fxU4Eh9NgbQ1VO0SlljomFpV5Vqxtpsl46g5cXmtAzzCAqgDiKM6UwkCeguLAWPK2K580nvf4iDttb0oqhfN1opFKzEn3mO3duKBLzxaW+EtoRqJugAWHo57nWPri88vyRY8eAt3DTuW0TRls5XvRtS1TvsnCas4RYYOnHTutV1JJa6+WSWMHGX8DcYnmdBmVF+iINRwda+yZhcM5tUZzUW56Ej8FgwQMFFWJzCL5NF6kNq7/mVF/oCw+zewCLUMdFxARqiTbD33B5AV3VTIGXJjPo/5hKG3BcLTHlHvIzhvEmeaQmVsSU0gJRuT59cwR+hVaErYOY/dp5Bx4SYAOZZtbOVoJ59DLhFULqh1wEvHI2Nf210oagZ0N65h+YxWYpzuxBuJX/MSmwBIcT4b7Al5azexiGoLjdZFW5j9luI5l2/C2uYUOGhxVpdftcX/1eryckMCCiG2iGFIL0KZWG29ugomwKupTBInrR2c/3TntTQD6gUgFyYF0a6V/wn73c3zMN8ZnPUqsQnxUQzOuqk7jy+Uha5umrMASnsia2V5IjoiQUYwQUFBMTAzQ0E1MzdFQUVEODdDMjRERDUzOTA5QjgwQTc4QTkyM0UzODIzRDY4REFDQzk0QjlGRjgzMDVEQyJ90fKg5oYhOSHdhmYEo2IToPNJ4DMxGfgVbVwAx6U2XrgR2G960rGlQQ1OMZFNnBIKKqvoqEu7md4YD9RLOTUaE1MLnh0XXO1v0KEljp+HwkWh+F6u4TFpyraM7Jzl2NWg8ygU2ijXkSC24PB2iB5f/FG824FrVOPWzMdptPFPWXSo3BRu6wxFiBMlL/GAJVIH6eHkZrcWv75dC2fyASHbg6fGdgjfjnzsTE39lH2/79EKWqJWGFbuFnceDrSTi4pSBRCzjR8qfc6+Mj7JgV2iNHwRaq3nRTSkDo/Idk2xLOlCzq3fLzXp1/HiQ4iwHRABhEKMjGC6s2dY4iEc6DViesI9+OXgRdqq4lBmSBYwQXLVnzX4Ie7gA8fbPuyLuMHzZsFKbDLsj5BWBpG61q+SF6QAQFm2EkEJ5GdmCE1BvpqbmKWxqiFVvLFSlTKdN9YBdF79A1jKKhABMbAJx3zzahVPvk4Cr2tJicbjD2k27PamZRiPHiwfLT+HG1gaCdYawo4WICjsALEPeuIOAy0NmiOlYK0d0RXKtAMEHXHaxgTYLXH5Jn8OFx/YE0OhY+9IbNfZYSIaxX5oqz4iZMU4hzvHn8XCll5hIE5A6Uhy2i7a/wy7hRVwxXbIB0up3CDnI4VOCASYVnV89v7J6Ha85Hks19k="
+}
+
+            var sessionid = sessionResponse.id
+            var sessionData = sessionResponse.sessionData
+            var dropin;
+            var inif = false;
+            const globalConfiguration = {
+                session: {
+                    id: sessionid, // Unique identifier for the payment session.
+                    sessionData: sessionData // The payment session data.
+                },
+                environment: 'test', // Change to 'live' for the live environment.
+                amount: {
+                    value: 10000,
+                    currency: 'AED'
+                },
+                locale: 'en-US',
+                countryCode: 'AE',
+                clientKey: 'YOUR CLIENT KEY', // Public key used for client-side authentication: https://docs.adyen.com/development-resources/client-side-authentication
+                onPaymentCompleted: (result, component) => {
+                    console.info(result, component);
+                },
+                onPaymentFailed: (result, component) => {
+                    console.info(result, component);
+                   
+                },
+                onError: (error, component) => {
+                    console.error(error.name, error.message, error.stack, component);
+                }
+            };
+            // All of the resources that you imported are properties of the window.
+            // In this example you imported Card, GooglePay, and Paypal individually.
+            const { AdyenCheckout, Dropin, Card, GooglePay, PayPal } = window.AdyenWeb;
+
+            const checkout = await AdyenCheckout(globalConfiguration);
+            dropin = new Dropin(checkout).mount('#dropin-container');
+        }
+        loadDropin();
+    </script>
+    <style>
+        .hide {
+            display: none;
+        }
+
+        .popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1001;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.5);
+            /* semi-transparent background */
+            z-index: 1000;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="overlay" class="overlay-div hide"></div>
+    <div id="holder-div" class="holder-div">
+        <div id="dropin-container"></div>
+    </div>
+
+   
+
+
+</body>
+
+
+</html>

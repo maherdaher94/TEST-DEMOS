@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>POS Checkout</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: "Segoe UI", sans-serif;
+      background-color: #f5f5f5;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 50px auto;
+      padding: 20px;
+      background-color: #fff;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      border-radius: 12px;
+    }
+
+    h2 {
+      margin-top: 0;
+      color: #333;
+    }
+
+    .pos-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+    }
+
+    .terminal-select {
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+
+    .content {
+      display: flex;
+      justify-content: space-between;
+      gap: 30px;
+    }
+
+    .item-list {
+      flex: 2;
+    }
+
+    .item {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    .summary {
+      flex: 1;
+      background-color: #fafafa;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 20px;
+    }
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      font-size: 16px;
+    }
+
+    .summary-total {
+      font-weight: bold;
+      font-size: 18px;
+      margin-top: 20px;
+      border-top: 1px solid #ccc;
+      padding-top: 10px;
+    }
+
+    .buttons {
+      margin-top: 40px;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    .btn {
+      flex: 1 1 200px;
+      padding: 12px 0;
+      background-color: #007bff;
+      color: #fff;
+      font-size: 16px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+
+    .btn:hover {
+      background-color: #0056b3;
+    }
+
+    .btn.refund {
+      background-color: #dc3545;
+    }
+
+    .btn.refund:hover {
+      background-color: #b02a37;
+    }
+
+    .btn.capture {
+      background-color: #28a745;
+    }
+
+    .btn.capture:hover {
+      background-color: #1e7e34;
+    }
+
+    .btn.preauth {
+      background-color: #17a2b8;
+    }
+
+    .btn.preauth:hover {
+      background-color: #117a8b;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+    <div class="pos-header">
+      <h2>Point of Sale</h2>
+      <select class="terminal-select">
+        <option value="">Select Terminal ID</option>
+        <option value="TID-001">TID-001</option>
+        <option value="TID-002">TID-002</option>
+        <option value="TID-003">TID-003</option>
+      </select>
+    </div>
+
+    <div class="content">
+      <div class="item-list">
+        <div class="item"><span>Item A</span><span>AED 10.00</span></div>
+        <div class="item"><span>Item B</span><span>AED 15.50</span></div>
+        <div class="item"><span>Item C</span><span>AED 8.75</span></div>
+        <div class="item"><span>Item D</span><span>AED 20.00</span></div>
+      </div>
+
+      <div class="summary">
+        <div class="summary-row"><span>Subtotal</span><span>AED 54.25</span></div>
+        <div class="summary-row"><span>VAT (5%)</span><span>AED 2.71</span></div>
+        <div class="summary-row summary-total"><span>Total</span><span>AED 56.96</span></div>
+      </div>
+    </div>
+
+    <div class="buttons">
+      <button class="btn preauth">Pre-authorize</button>
+      <button class="btn capture">Capture</button>
+      <button class="btn sale">Sale</button>
+      <button class="btn refund">Refund</button>
+    </div>
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+  <!-- Your future JS logic using jQuery can go here -->
+  <script>
+    $(document).ready(function () {
+
+      var preauth_pspReference, sale_pspReference, sale_tenderRef, preauth_tenderRef, sale_transactionDate;
+      function getCurrentISOTime() {
+        const currentTime = new Date().toISOString();
+        return currentTime
+      }
+
+      function getRandomEpochTime() {
+        // Get current time in seconds
+        const now = Math.floor(Date.now() / 1000);
+
+        // Random offset: up to ±1 week (in seconds)
+        const offset = Math.floor(Math.random() * 7 * 24 * 60 * 60);
+
+        // Return a random epoch within a week range
+        return now + (Math.random() < 0.5 ? -offset : offset);
+      }
+
+      function generateGUID() {
+        return 'xxxxxxxxxx'.replace(/[xy]/g, function (c) {
+          const r = Math.random() * 16 | 0;
+          const v = c === 'x' ? r : (r & 0x3 | 0x8);
+          return v.toString(16);
+        });
+      }
+
+      function buildRefundPrintRequest(response) {
+  const header = response?.SaleToPOIResponse?.MessageHeader || {};
+  const receipt = response?.SaleToPOIResponse?.ReversalResponse?.PaymentReceipt?.find(
+    r => r.DocumentQualifier === "CashierReceipt"
+  );
+
+  const outputLines = receipt?.OutputContent?.OutputText || [];
+
+  const formattedOutputText = [
+    {
+      CharacterStyle: "Bold",
+      Alignment: "Centred",
+      EndOfLineFlag: true,
+      Text: "***REFUND***"
+    }
+  ];
+
+  outputLines.forEach(item => {
+    const decoded = decodeURIComponent(item.Text || "");
+    const parts = decoded.split("&").reduce((acc, cur) => {
+      const [k, v] = cur.split("=");
+      acc[k] = v;
+      return acc;
+    }, {});
+
+    if (parts.name && parts.value) {
+      formattedOutputText.push({
+        Alignment: "Left",
+        EndOfLineFlag: false,
+        Text: parts.name
+      });
+      formattedOutputText.push({
+        Alignment: "Right",
+        EndOfLineFlag: true,
+        Text: parts.value
+      });
+    } else if (parts.name) {
+      const obj = {
+        Alignment: "Centred",
+        EndOfLineFlag: true,
+        Text: parts.name
+      };
+      if (item.CharacterStyle) obj.CharacterStyle = item.CharacterStyle;
+      formattedOutputText.push(obj);
+    } else if (parts.key) {
+      const obj = {
+        Alignment: "Centred",
+        EndOfLineFlag: true,
+        Text: parts.key === "filler" ? "" : parts.key
+      };
+      if (item.CharacterStyle) obj.CharacterStyle = item.CharacterStyle;
+      formattedOutputText.push(obj);
+    }
+  });
+
+  return {
+    SaleToPOIRequest: {
+      MessageHeader: {
+        ProtocolVersion: "3.0",
+        MessageClass: "Device",
+        MessageCategory: "Print",
+        MessageType: "Request",
+        ServiceID: generateGUID()+"",
+        SaleID: header.SaleID || "UNKNOWN_SALE_ID",
+        POIID: header.POIID || "UNKNOWN_POI_ID"
+      },
+      PrintRequest: {
+        PrintOutput: {
+          DocumentQualifier: "Document",
+          ResponseMode: "PrintEnd",
+          OutputContent: {
+            OutputFormat: "Text",
+            OutputText: formattedOutputText
+          }
+        }
+      }
+    }
+  };
+}
+
+
+      function buildPrintRequestFromResponse(response, text) {
+        // Step 1: Extract pspReference
+        const additionalResponse = response?.SaleToPOIResponse?.PaymentResponse?.Response?.AdditionalResponse || "";
+        const pspMatch = additionalResponse.match(/pspReference=([^&]+)/);
+        const pspReference = pspMatch ? decodeURIComponent(pspMatch[1]) : "N/A";
+        console.log("PSP Reference:", pspReference);
+
+        // Step 2: Get OutputText from the first (CashierReceipt) receipt
+        const outputLines = response?.SaleToPOIResponse?.PaymentResponse?.PaymentReceipt?.find(
+          r => r.DocumentQualifier === "CashierReceipt"
+        )?.OutputContent?.OutputText || [];
+
+        // Step 3: Format OutputText into API format
+        const formattedOutputText = [];
+
+        // 🔝 Add preauth banner at the top
+        formattedOutputText.push({
+          CharacterStyle: "Bold",
+          Alignment: "Centred",
+          EndOfLineFlag: true,
+          Text: text
+        });
+
+        outputLines.forEach(item => {
+          const decoded = decodeURIComponent(item.Text || "");
+          const parts = decoded.split("&").reduce((acc, cur) => {
+            const [k, v] = cur.split("=");
+            acc[k] = v;
+            return acc;
+          }, {});
+
+          if (parts.name && parts.value) {
+            formattedOutputText.push({
+              Alignment: "Left",
+              EndOfLineFlag: false,
+              Text: parts.name
+            });
+            formattedOutputText.push({
+              Alignment: "Right",
+              EndOfLineFlag: true,
+              Text: parts.value
+            });
+          } else if (parts.name) {
+            const obj = {
+              Alignment: "Centred",
+              EndOfLineFlag: true,
+              Text: parts.name
+            };
+            if (item.CharacterStyle) obj.CharacterStyle = item.CharacterStyle;
+            formattedOutputText.push(obj);
+          } else if (parts.key) {
+            const obj = {
+              Alignment: "Centred",
+              EndOfLineFlag: true,
+              Text: parts.key === "filler" ? "" : parts.key
+            };
+            if (item.CharacterStyle) obj.CharacterStyle = item.CharacterStyle;
+            formattedOutputText.push(obj);
+          }
+        });
+
+        // Step 4: Build API PrintRequest
+        const printRequest = {
+          SaleToPOIRequest: {
+            MessageHeader: {
+              ProtocolVersion: "3.0",
+              MessageClass: "Device",
+              MessageCategory: "Print",
+              MessageType: "Request",
+              ServiceID: generateGUID() + "",
+              SaleID: "POSSystemID12345",
+              POIID: "S1F2L-000158251517267"
+            },
+            PrintRequest: {
+              PrintOutput: {
+                DocumentQualifier: "Document",
+                ResponseMode: "PrintEnd",
+                OutputContent: {
+                  OutputFormat: "Text",
+                  OutputText: formattedOutputText
+                }
+              }
+            }
+          }
+        };
+
+        console.log("Formatted Print Request:", printRequest);
+        return printRequest;
+      }
+
+      $('.preauth').on('click', function () {
+
+        var settings = {
+          "url": "./TAPIcloud.php",
+          "method": "POST",
+          "timeout": 0,
+          "headers": {
+            "Content-Type": "application/json"
+          },
+
+          "data": JSON.stringify({
+            "SaleToPOIRequest": {
+              "MessageHeader": {
+                "ProtocolVersion": "3.0",
+                "MessageClass": "Service",
+                "MessageCategory": "Payment",
+                "MessageType": "Request",
+                "SaleID": "POSSystemID12",
+                "ServiceID": generateGUID(),
+                "POIID": "S1F2L-000158251517267"
+              },
+              "PaymentRequest": {
+                "SaleData": {
+                  "SaleTransactionID": {
+                    "TransactionID": getRandomEpochTime() + "",
+                    "TimeStamp": getCurrentISOTime() + ""
+                  },
+                  "SaleToAcquirerData": "authorisationType=PreAuth&manualCapture=true",
+                  "TokenRequestedType": "Customer"
+                },
+                "PaymentTransaction": {
+                  "AmountsReq": {
+                    "Currency": "AED",
+                    "RequestedAmount": 56.96
+                  }
+                }
+              }
+            }
+          }),
+        };
+
+        $.ajax(settings).done(function (response) {
+          console.log(JSON.parse(response));
+          const additionalResponse = JSON.parse(response)?.SaleToPOIResponse?.PaymentResponse?.Response?.AdditionalResponse || "";
+          const pspMatch = additionalResponse.match(/pspReference=([^&]+)/);
+          preauth_pspReference = pspMatch ? decodeURIComponent(pspMatch[1]) : "N/A";
+          // console.log("PSP Reference:", pspReference);
+          const tenderMatch = additionalResponse.match(/Tender=([^&]+)/);
+
+          preauth_tenderRef = tenderMatch ? decodeURIComponent(tenderMatch[1]) : "N/A";
+
+          console.log("PREAUTH PSP Reference:", preauth_pspReference);
+          console.log("PREAUTH Tender Reference:", preauth_tenderRef);
+
+          var print_preAuth_request = buildPrintRequestFromResponse(JSON.parse(response), "***PREAUTH****");
+
+          var settings = {
+            "url": "./TAPIcloud.php",
+            "method": "POST",
+            "timeout": 0,
+            "headers": {
+              "Content-Type": "application/json"
+            },
+
+            "data": JSON.stringify(print_preAuth_request),
+          };
+
+          $.ajax(settings).done(function (response) {
+          });
+
+        });
+
+
+
+      });
+
+      $('.sale').on('click', function () {
+
+        sale_transactionDate = getCurrentISOTime() + ""
+
+        var settings = {
+          "url": "./TAPIcloud.php",
+          "method": "POST",
+          "timeout": 0,
+          "headers": {
+            "Content-Type": "application/json"
+          },
+
+          "data": JSON.stringify({
+            "SaleToPOIRequest": {
+              "MessageHeader": {
+                "ProtocolVersion": "3.0",
+                "MessageClass": "Service",
+                "MessageCategory": "Payment",
+                "MessageType": "Request",
+                "SaleID": "POSSystemID12",
+                "ServiceID": generateGUID(),
+                "POIID": "S1F2L-000158251517267"
+              },
+              "PaymentRequest": {
+                "SaleData": {
+                  "SaleTransactionID": {
+                    "TransactionID": getRandomEpochTime() + "",
+                    "TimeStamp": sale_transactionDate
+                  },
+                  "SaleToAcquirerData": "",
+                  "TokenRequestedType": "Customer"
+                },
+                "PaymentTransaction": {
+                  "AmountsReq": {
+                    "Currency": "AED",
+                    "RequestedAmount": 56.96
+                  }
+                }
+              }
+            }
+          }),
+        };
+
+        $.ajax(settings).done(function (response) {
+          console.log(JSON.parse(response));
+          const additionalResponse = JSON.parse(response)?.SaleToPOIResponse?.PaymentResponse?.Response?.AdditionalResponse || "";
+          const pspMatch = additionalResponse.match(/pspReference=([^&]+)/);
+          sale_pspReference = pspMatch ? decodeURIComponent(pspMatch[1]) : "N/A";
+          
+          const tenderMatch = additionalResponse.match(/Tender=([^&]+)/);
+
+          sale_tenderRef = tenderMatch ? decodeURIComponent(tenderMatch[1]) : "N/A";
+
+          console.log("SALE PSP Reference:", sale_pspReference);
+          console.log("SALE Tender Reference:", sale_tenderRef);
+
+
+          var print_preAuth_request = buildPrintRequestFromResponse(JSON.parse(response), "***SALE***");
+
+          var settings = {
+            "url": "./TAPIcloud.php",
+            "method": "POST",
+            "timeout": 0,
+            "headers": {
+              "Content-Type": "application/json"
+            },
+
+            "data": JSON.stringify(print_preAuth_request),
+          };
+
+          $.ajax(settings).done(function (response) {
+
+
+
+
+          });
+
+        });
+
+
+
+      });
+
+      $('.refund').on('click', function () {
+
+        var settings = {
+          "url": "./TAPIcloud.php",
+          "method": "POST",
+          "timeout": 0,
+          "headers": {
+            "Content-Type": "application/json"
+          },
+
+          "data": JSON.stringify({
+            "SaleToPOIRequest": {
+              "MessageHeader": {
+                "ProtocolVersion": "3.0",
+                "MessageClass": "Service",
+                "MessageCategory": "Reversal",
+                "MessageType": "Request",
+                "SaleID": "POSSystemID12345",
+                "ServiceID": generateGUID(),
+                "POIID": "S1F2L-000158251517267"
+              },
+              "ReversalRequest": {
+                "OriginalPOITransaction": {
+                  "POITransactionID": {
+                    "TransactionID": `${sale_tenderRef}.${sale_pspReference}`,
+                    "TimeStamp": `${sale_transactionDate}`
+                  }
+                },
+                "ReversalReason": "MerchantCancel"
+              }
+            }
+          }),
+        };
+
+        $.ajax(settings).done(function (response) {
+          console.log('refund response',JSON.parse(response))
+
+          var print_refund_request = buildRefundPrintRequest(JSON.parse(response));
+
+          var settings = {
+            "url": "./TAPIcloud.php",
+            "method": "POST",
+            "timeout": 0,
+            "headers": {
+              "Content-Type": "application/json"
+            },
+
+            "data": JSON.stringify(print_refund_request),
+          };
+
+          $.ajax(settings).done(function (response) {
+
+            console.log(response);
+
+            
+          });
+
+
+
+        });
+
+
+
+
+
+
+      });
+
+
+
+
+    });
+  </script>
+
+
+
+</body>
+
+</html>
